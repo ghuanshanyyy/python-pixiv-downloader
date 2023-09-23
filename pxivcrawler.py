@@ -59,7 +59,7 @@ def getUserInfo(id):
     response = httpx.get(
         f"https://www.pixiv.net/ajax/user/{id}/profile/all",
         headers=headers,
-        cookies=cookies,
+        cookies=config["cookies"],
     )
     content = json.loads(response.text)["body"]
     if response.status_code == 200:
@@ -71,7 +71,7 @@ def getUserInfo(id):
 
 def getDetailInfo(id):
     response = httpx.get(
-        f"https://www.pixiv.net/ajax/illust/{id}", headers=headers, cookies=cookies
+        f"https://www.pixiv.net/ajax/illust/{id}", headers=headers, cookies=config["cookies"]
     )
     if response.status_code == 200:
         content = json.loads(response.text)["body"]
@@ -87,6 +87,7 @@ def getDetailInfo(id):
 def downloader(dst, urls):
     if not os.path.exists(dst):
         os.mkdir(dst)
+        logger.info("下载"+dst)
         for url in urls:
             file=os.path.join(dst, url.split("/")[-1])
             if not os.path.exists(file):
@@ -100,6 +101,11 @@ def main(mainUrl):
     task_name = md5(mainUrl.encode("utf-8")).hexdigest()
     logger.info(f"任务:{task_name} {mainUrl}")
     try:
+        if not os.path.exists(config["save_dir"]):
+            os.mkdir(config["save_dir"])
+        if not os.path.exists("pixiv"):
+            os.mkdir("pxic")
+
         if not os.path.exists(f"task/{task_name}.json"):
             uid = re.match("https://www.pixiv.net/users/(\d+)", mainUrl).group(1)
             username, illusts = getUserInfo(uid).values()
@@ -119,16 +125,18 @@ def main(mainUrl):
                     }
                 )
                 time.sleep(delay + random.random())
-            with open(f"task/{task_name}.task") as fp:
+
+            with open(f"task/{task_name}.json",'w') as fp:
                 json.dump(task,fp)
-        with open(f"task/{task_name}.task")    as fp:
+
+        with open(f"task/{task_name}.json","r") as fp:
             tasks=json.load(fp)
             for unit in tasks:
-                downloader(task['dst'],task['urls'])
+                print(unit)
+                downloader(unit['dst'],unit['urls'])
 
-
-    except Exception as e:
-        print(e)
+    finally:
+        ...
 
 if __name__ == '__main__':
     os.chdir(os.path.split(__file__)[0])
