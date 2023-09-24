@@ -19,7 +19,7 @@ headers2 = {
     "sec-fetch-dest": "image",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.36",
 }
-config = {"save_dir": "pixiv"}
+config = {"save_dir": r"pixiv"}
 task = []
 def initArgs():
     parser = argparse.ArgumentParser()
@@ -86,14 +86,15 @@ def getDetailInfo(id):
 
 def downloader(dst, urls):
     if not os.path.exists(dst):
-        os.mkdir(dst)
+        os.makedirs(dst)
         logger.info("下载"+dst)
         for url in urls:
             file=os.path.join(dst, url.split("/")[-1])
+            print(file)
             if not os.path.exists(file):
                 response = httpx.get(url, headers=headers2)
                 if response.status_code == 200:
-                    with open(dst, "wb") as fp:
+                    with open(file, "wb") as fp:
                         fp.write(response.content)
 
 
@@ -103,8 +104,8 @@ def main(mainUrl):
     try:
         if not os.path.exists(config["save_dir"]):
             os.mkdir(config["save_dir"])
-        if not os.path.exists("pixiv"):
-            os.mkdir("pxic")
+        if not os.path.exists("task"):
+            os.mkdir("task")
 
         if not os.path.exists(f"task/{task_name}.json"):
             uid = re.match("https://www.pixiv.net/users/(\d+)", mainUrl).group(1)
@@ -118,7 +119,7 @@ def main(mainUrl):
                 logger.info(title)
                 task.append(
                     {
-                        "dst": os.path.join(config["save_dir"], date + title),
+                        "dst": os.path.join(config["save_dir"],username,"pixiv", date + title),
                         "urls": [
                             re.sub("_p\d+", f"_p{i}", urls) for i in range(0, pageCount)
                         ],
@@ -132,7 +133,6 @@ def main(mainUrl):
         with open(f"task/{task_name}.json","r") as fp:
             tasks=json.load(fp)
             for unit in tasks:
-                print(unit)
                 downloader(unit['dst'],unit['urls'])
 
     finally:
